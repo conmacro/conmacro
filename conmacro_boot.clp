@@ -68,6 +68,11 @@ nil)
 (bind ?multi (if (fact-slot-value ?f multi) then "multi" else ""))
 (bind ?default (if (eq nil (fact-slot-value ?f default)) then "" else (format nil " (default %s)" (fact-slot-value ?f default)))) 
     (format nil "(%sslot %s%s)%n" ?multi (fact-slot-value ?f name) ?default)))
+(deftemplate clips:assertion 
+(slot is)
+)
+(defmethod to-verbatim ((?f FACT-ADDRESS (eq (fact-relation ?f) clips:assertion)) (?type (eq ?type clips-source-code)) )
+(format nil "(assert %s)%n" (to-verbatim (fact-slot-value ?f is) ?type)))
 (deftemplate file 
 (slot name)
 (multislot is)
@@ -76,11 +81,18 @@ nil)
 (slot file)
 (slot is)
 )
-(defrule clips-file-type
-?file <- (file (name ?name&:(str-endswithp ?name ".clp")))
+(deftemplate file-extension 
+(slot is)
+(slot assumed-type)
+)
+(assert (file-extension (is "clp") (assumed-type clips-source-code)))
+(assert (file-extension (is "md") (assumed-type markdown)))
+(defrule file-type-mapping
+(file-extension (is ?ext) (assumed-type ?type))
+?file <- (file (name ?name&:(str-endswithp ?name (str-cat "." ?ext))))
 (not (exists (file-type (file ?file))))
  =>
- (assert (file-type (file ?file) (is clips-source-code))))
+ (assert (file-type (file ?file) (is ?type))))
 (deftemplate file-content 
 (slot file)
 (slot is)

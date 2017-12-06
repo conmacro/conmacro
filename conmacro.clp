@@ -94,7 +94,12 @@
 			      (body "(bind ?multi (if (fact-slot-value ?f multi) then \"multi\" else \"\"))
 (bind ?default (if (eq nil (fact-slot-value ?f default)) then \"\" else (format nil \" (default %s)\" (fact-slot-value ?f default)))) 
     (format nil \"(%sslot %s%s)%n\" ?multi (fact-slot-value ?f name) ?default))")))
-
+        (bind ?clipsAssertionTemplate (assert (clips:template (name clips:assertion))))
+	(ignore (assert (clips:template-slot (template ?clipsAssertionTemplate) (name is))))
+	(assert (clips:method (name to-verbatim)
+	                      (arguments "(?f FACT-ADDRESS (eq (fact-relation ?f) clips:assertion))"
+			                 "(?type (eq ?type clips-source-code))")
+			      (body "(format nil \"(assert %s)%n\" (to-verbatim (fact-slot-value ?f is) ?type))")))
 	;; Files 
 	(bind ?fileTemplate (assert (clips:template (name file))))
 	(ignore (assert 
@@ -105,10 +110,17 @@
 	(ignore (assert
 	         (clips:template-slot (template ?fileTypeTemplate) (name file))
 		 (clips:template-slot (template ?fileTypeTemplate) (name is))))
-        (assert (clips:rule (name clips-file-type)
-                (conditions "?file <- (file (name ?name&:(str-endswithp ?name \".clp\")))"
+	(bind ?fileExtTypeMapping (assert (clips:template (name file-extension))))
+	(ignore (assert
+	          (clips:template-slot (template ?fileExtTypeMapping) (name is))
+		  (clips:template-slot (template ?fileExtTypeMapping) (name assumed-type))))
+	(assert (clips:assertion (is "(file-extension (is \"clp\") (assumed-type clips-source-code))")))
+	(assert (clips:assertion (is "(file-extension (is \"md\") (assumed-type markdown))")))
+        (assert (clips:rule (name file-type-mapping)
+                (conditions "(file-extension (is ?ext) (assumed-type ?type))"
+		            "?file <- (file (name ?name&:(str-endswithp ?name (str-cat \".\" ?ext))))"
                             "(not (exists (file-type (file ?file))))")
-		(body "(assert (file-type (file ?file) (is clips-source-code)))")))
+		(body "(assert (file-type (file ?file) (is ?type)))")))
         (bind ?fileContentTemplate (assert (clips:template (name file-content))))
 	(ignore (assert
 	         (clips:template-slot (template ?fileContentTemplate) (name file))
@@ -125,6 +137,35 @@
     (close ?name)")))
 )))
 
+(defglobal ?*quick-intro* =
+   (create$
+      "Conmacro (*construct macro*) is an exploration in how complex systems can be built.
+Inspired by some of the original ideas behind literate programming, its based on the
+idea of defining the entire program and its literature as abody of knowledge facts
+(*constructs*) and using a rule production system (aka *expert system*) to infer
+supplemental constructs & knowledge and produce verbatim files (*macro expansion*)
+
+"))
+
+(assert (file (name "README.md")
+              (is "# Conmacro
+
+" ?*quick-intro*
+"## Requirements
+
+* [CLIPS 6.30](http://clipsrules.net)
+
+"
+
+"## Using
+
+In order to invoke conmacro, run
+
+```shell
+clips -f2 conmacro_boot.clp <file.clp>
+```
+"
+)))
 
 (run)
 (exit)
