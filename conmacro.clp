@@ -135,6 +135,38 @@
     (open ?name ?logicalName \"wb\")
     (printout ?logicalName ?content)
     (close ?name)")))
+        ;; Document
+	(bind ?sectionTemplate (assert (clips:template (name section))))
+	(ignore (assert
+	         (clips:template-slot (template ?sectionTemplate) (name level) (default "1"))
+		 (clips:template-slot (template ?sectionTemplate) (name title))
+		 (clips:template-slot (template ?sectionTemplate) (name is) (multi TRUE))))
+        (assert (clips:method (name to-verbatim)
+	                      (arguments "(?f FACT-ADDRESS (and (eq (fact-relation ?f) section) (> (fact-slot-value ?f level) 0) (< (fact-slot-value ?f level) 7)))" 
+			                 "(?type (eq ?type markdown))")
+			      (body "(bind ?h \"\")
+			      (loop-for-count (fact-slot-value ?f level)
+			         (bind ?h (str-cat ?h \"#\")))
+			      (format nil \"%s %s%n%n%s%n\" ?h (fact-slot-value ?f title) 
+			         (to-verbatim (fact-slot-value ?f is) ?type))")))
+       (bind ?olTemplate (assert (clips:template (name ol))))
+       (ignore (assert (clips:template-slot (template ?olTemplate) (name is) (multi TRUE))))
+       (assert (clips:method (name to-verbatim)
+	                      (arguments "(?f FACT-ADDRESS (eq (fact-relation ?f) ol))"
+			                 "(?type (eq ?type markdown))")
+			      (body "(bind ?h \"\")
+			      (bind ?is (fact-slot-value ?f is))
+			      (loop-for-count (?i (length$ ?is)) 
+			         (bind ?h (format nil \"%s* %s%n\" ?h (to-verbatim (nth$ ?i ?is) ?type))))
+			      ?h")))
+      (bind ?linkTemplate (assert (clips:template (name link))))
+      (ignore (assert (clips:template-slot (template ?linkTemplate) (name name))
+                      (clips:template-slot (template ?linkTemplate) (name to))))
+       (assert (clips:method (name to-verbatim)
+	                      (arguments "(?f FACT-ADDRESS (eq (fact-relation ?f) link))"
+			                 "(?type (eq ?type markdown))")
+			      (body "(format nil \"[%s](%s)\" (fact-slot-value ?f name) (fact-slot-value ?f to))")))
+
 )))
 
 (defglobal ?*quick-intro* =
@@ -148,23 +180,27 @@ supplemental constructs & knowledge and produce verbatim files (*macro expansion
 "))
 
 (assert (file (name "README.md")
-              (is "# Conmacro
+              (is 
 
-" ?*quick-intro*
-"## Requirements
+(assert (section (title "Conmacro")
+	 (is ?*quick-intro*)))
+(assert (section (level 2) (title "Requirements")
+(is
+(assert (ol (is
+(assert (link (to "http://clipsrules.net") (name "CLIPS 6.30")))
+)))
+)))
 
-* [CLIPS 6.30](http://clipsrules.net)
-
-"
-
-"## Using
-
-In order to invoke conmacro, run
+(assert (section (level 2) (title "Using")
+(is
+"In order to invoke conmacro, run
 
 ```shell
 clips -f2 conmacro_boot.clp <file.clp>
 ```
 "
+)))
+
 )))
 
 (run)
