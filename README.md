@@ -13,9 +13,9 @@ supplemental constructs & knowledge and produce verbatim files (*macro expansion
 
 ## Using
 
-In order to invoke conmacro, run
+In order to rebuild conmacro, run
 
 ```shell
-clips -f2 conmacro_boot.clp <file.clp>
+clips -f2 conmacro.clp
 ```
 

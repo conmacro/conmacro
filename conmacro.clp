@@ -1,4 +1,5 @@
-
+(load "conmacro_boot.clp")
+(reset)
 (assert (file (name "conmacro_boot.clp") (is 
 	;; Utilities
 	(assert (clips:function (name ignore)
@@ -99,7 +100,7 @@
 	(assert (clips:method (name to-verbatim)
 	                      (arguments "(?f FACT-ADDRESS (eq (fact-relation ?f) clips:assertion))"
 			                 "(?type (eq ?type clips-source-code))")
-			      (body "(format nil \"(assert %s)%n\" (to-verbatim (fact-slot-value ?f is) ?type))")))
+			      (body "(format nil \"(deffacts %s %s)%n\" (gensym) (to-verbatim (fact-slot-value ?f is) ?type))")))
 	;; Files 
 	(bind ?fileTemplate (assert (clips:template (name file))))
 	(ignore (assert 
@@ -193,10 +194,10 @@ supplemental constructs & knowledge and produce verbatim files (*macro expansion
 
 (assert (section (level 2) (title "Using")
 (is
-"In order to invoke conmacro, run
+"In order to rebuild conmacro, run
 
 ```shell
-clips -f2 conmacro_boot.clp <file.clp>
+clips -f2 conmacro.clp
 ```
 "
 )))
