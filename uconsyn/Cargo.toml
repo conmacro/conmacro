@@ -1,0 +1,9 @@
+[package]
+name = "uconsyn"
+version = "0.1.0"
+authors = ["Yurii Rashkovskii <yrashk@gmail.com>"]
+
+[dependencies]
+nom = "3.2"
+clap = "2.29"
+unindent = "0.1"

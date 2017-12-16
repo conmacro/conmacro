@@ -1,0 +1,166 @@
+=generic clips.template name: 'clips.generic
+clips.template-slot template: @generic name: 'name
+
+=function-source-code clips.function name: 'clips-function-to-source-code-verbatim arguments: [ "?name" "?f" "?type" ]
+    body: """
+    (bind ?s (format nil "(def%s %s (" ?name (fact-slot-value ?f name)))
+    (bind ?args (fact-slot-value ?f arguments))
+    (loop-for-count (?i (length$ ?args))
+       (bind ?s (str-cat ?s (to-verbatim (nth$ ?i ?args) ?type) " ")))
+    (bind ?s (str-cat ?s (format nil ")%n%s)%n" (to-verbatim (fact-slot-value ?f body) ?type))))
+    ?s
+"""
+
+=method clips.template name: 'clips.method
+clips.template-slot template: @method name: 'name
+                                    + name: 'body
+                                    + name: 'arguments multi: 'TRUE
+
+
+=function clips.template name: 'clips.function
+clips.template-slot template: @function name: 'name
+                                      + name: 'body
+                                      + name: 'arguments multi: 'TRUE
+
+=rule clips.template name: 'clips.rule
+clips.template-slot template: @rule name: 'name
+                                  + name: 'body
+                                  + name: 'conditions multi: 'TRUE
+
+=template clips.template name: 'clips.template
+clips.template-slot template: @template name: 'name
+
+=template-slot clips.template name: 'clips.template-slot
+clips.template-slot template: @template-slot name: 'template
+                                           + name: 'name
+                                           + name: 'default
+                                           + name: 'multi default: 'FALSE
+
+                               
+=assertion clips.template name: 'clips.assertion
+clips.template-slot template: @assertion name: 'is
+
+=file clips.template name: 'file
+clips.template-slot template: @file name: 'name
+                                  + name: 'is multi: 'TRUE
+
+=file-type clips.template name: 'file-type
+clips.template-slot template: @file-type name: 'file
+                                       + name: 'is
+
+=file-ext-mapping clips.template name: 'file-extension
+clips.template-slot template: @file-ext-mapping name: 'is
+                                              + name: 'assumed-type
+
+=file-content clips.template name: 'file-content
+clips.template-slot template: @file-content name: 'file
+                                          + name: 'is
+
+file name: "conmacro_boot.clp" =>
+     [
+     clips.function name: 'str-endswithp arguments: [ "?str" "?ending" ]
+                    body: "(eq (sub-string (+ 1 (- (str-length ?str) (str-length ?ending))) (str-length ?str) ?str) ?ending)"
+
+     clips.generic name: 'to-verbatim
+
+     clips.method name: 'to-verbatim arguments: [ "(?s SYMBOL (eq ?s nil))" "?type" ]
+                  body: <'""'> 
+
+     + arguments: [ "(?s STRING)" "?type" ] body: <'?s'>
+     + arguments: [ "(?f (multifieldp ?f))" "?type" ] body: """
+     (bind ?s "")
+     (loop-for-count (?i (length$ ?f))
+        (bind ?s (str-cat ?s (to-verbatim (nth$ ?i ?f) ?type))))
+     ?s
+     """
+
+     @generic
+
+     clips.method name: 'to-verbatim arguments: [ "(?f FACT-ADDRESS (eq (fact-relation ?f) clips.generic))"
+                                             "(?type (eq ?type clips-source-code))" ]
+                  body: """
+                 (format nil "(defgeneric %s)%n" (fact-slot-value ?f name))
+                  """
+
+
+     @function-source-code
+
+     @method
+     clips.method name: 'to-verbatim arguments: [ "(?f FACT-ADDRESS (eq (fact-relation ?f) clips.method))"
+                                             "(?type (eq ?type clips-source-code))" ]
+                  body: """(clips-function-to-source-code-verbatim method ?f ?type)"""
+
+     @function
+     clips.method name: 'to-verbatim arguments: [ "(?f FACT-ADDRESS (eq (fact-relation ?f) clips.function))"
+                                             "(?type (eq ?type clips-source-code))" ]
+                   body: """(clips-function-to-source-code-verbatim function ?f ?type)"""
+ 
+     @rule
+
+    clips.method name: 'to-verbatim arguments: ["(?f FACT-ADDRESS (eq (fact-relation ?f) clips.rule))"
+                                            "(?type (eq ?type clips-source-code))" ]
+             body: """
+    (bind ?s (format nil "(defrule %s%n" (fact-slot-value ?f name)))
+    (bind ?conds (fact-slot-value ?f conditions))
+    (loop-for-count (?i (length$ ?conds))
+       (bind ?s (str-cat ?s (to-verbatim (nth$ ?i ?conds) ?type) (format nil "%n"))))
+    (bind ?s (str-cat ?s (format nil " =>%n %s)%n" (to-verbatim (fact-slot-value ?f body) ?type))))
+    ?s
+     """
+
+      @template
+      @template-slot
+
+     clips.method name: 'to-verbatim arguments: ["(?f FACT-ADDRESS (eq (fact-relation ?f) clips.template))"
+			                                      "(?type (eq ?type clips-source-code))"]
+             body: """
+    (bind ?s (format nil "(deftemplate %s %n" (fact-slot-value ?f name)))
+    (do-for-all-facts ((?slot clips.template-slot)) (eq ?slot:template ?f)
+       (bind ?s (str-cat ?s (to-verbatim ?slot ?type))))
+    (format nil "%s)%n" ?s)
+             """
+
+          + arguments: ["(?f FACT-ADDRESS (eq (fact-relation ?f) clips.template-slot))"
+            "(?type (eq ?type clips-source-code))"]
+            body: """
+            (bind ?multi (if (fact-slot-value ?f multi) then "multi" else ""))
+            (bind ?default (if (eq nil (fact-slot-value ?f default)) then "" else (format nil " (default %s)" (fact-slot-value ?f default)))) 
+            (format nil "(%sslot %s%s)%n" ?multi (fact-slot-value ?f name) ?default)
+            """
+
+      @assertion
+
+      clips.method name: 'to-verbatim arguments: ["(?f FACT-ADDRESS (eq (fact-relation ?f) clips.assertion))"
+                                            "(?type (eq ?type clips-source-code))"]
+                   body: """
+                   (format nil "(deffacts %s %s)%n" (gensym) (to-verbatim (fact-slot-value ?f is) ?type))
+                   """
+
+      @file @file-type @file-ext-mapping
+
+      clips.assertion => <'(file-extension (is "clp") (assumed-type clips-source-code))'> 
+      clips.assertion => <'(file-extension (is "md") (assumed-type markdown))'>
+
+      clips.rule name: 'file-type-mapping
+           conditions: ["(file-extension (is ?ext) (assumed-type ?type))"
+		                    <'?file <- (file (name ?name&:(str-endswithp ?name (str-cat "." ?ext))))'>
+                        "(not (exists (file-type (file ?file))))"]
+           body: "(assert (file-type (file ?file) (is ?type)))"
+
+      @file-content
+
+      clips.rule name: 'produce-file-content
+                 conditions: ["?file <- (file (name ?name) (is $?data))"
+                              "(file-type (file ?file) (is ?type))"]
+                 body: "(assert (file-content (file ?file) (is (to-verbatim ?data ?type))))" 
+
+      clips.rule name: 'write-file
+                 conditions: ["?file <- (file (name ?name))" "(file-content (file ?file) (is ?content))"]
+                 body: """
+                 (bind ?logicalName (gensym))
+                 (open ?name ?logicalName "wb")
+                 (printout ?logicalName ?content)
+                 (close ?name)
+                 """
+
+     ]
