@@ -9,13 +9,9 @@ supplemental constructs & knowledge and produce verbatim files (*macro expansion
 
 ## Requirements
 
+* [Rust 1.21+](https://rust-lang.org) for uconsyn
 * [CLIPS 6.30](http://clipsrules.net)
 
 ## Using
 
-In order to rebuild conmacro, run
-
-```shell
-clips -f2 conmacro.clp
-```
-
+In order to rebuild conmacro, just run `make`
